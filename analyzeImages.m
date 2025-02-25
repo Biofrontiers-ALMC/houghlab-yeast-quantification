@@ -30,6 +30,7 @@ end
 
 ip = inputParser;
 ip.addParameter('CellSensitivity', 0.2);
+ip.addParameter('Smoothing', 3);
 parse(ip, varargin{:});
 
 %inputDir = 'Z:\Microscopy\Yeast\Sup35\20250211_JA_Sup35MstartWT_4hrinduction';
@@ -98,6 +99,12 @@ for iFile = 1:numel(fileList)
      
         image(:, :, iZ) = I;
     end
+
+    %Create a mask of the cells using a smoothed image to remove unwanted
+    %hot spots
+    cellMask = imbinarize(medfilt3(image, [ip.Results.Smoothing, ip.Results.Smoothing, ip.Results.Smoothing]),...
+        'adaptive', 'Sensitivity', 0.1);
+
     
 
 
@@ -146,7 +153,7 @@ for iFile = 1:numel(fileList)
     %Clean up the cell mask
     cellMask = imopen(cellMask, strel('sphere', 4));
 
-    %%
+    %Watershed to separate clusters of objects
     dd = -bwdist(~cellMask);
     dd(~cellMask) = Inf;
 
@@ -155,7 +162,11 @@ for iFile = 1:numel(fileList)
     LL = watershed(dd);
     LL(~cellMask) = 0;
 
-    % volshow(LL)
+    cellMask(LL == 0) = false;
+
+    cellMask = bwareaopen(cellMask, 5000, 26);
+    volshow(cellMask)
+
     % %% Spot finding
     % sigma1 = 6;
     % sigma2 = 3;
@@ -176,15 +187,13 @@ for iFile = 1:numel(fileList)
     %volshow(spotMask)
 
     %%
-    cellMask(LL == 0) = false;
-    %volshow(mask3)
 
 
     %% Visualize by generating zStack of images
     for iZ = 1:size(image, 3)
 
         imgOut = showoverlay(image(:, :, iZ), bwperim(cellMask(:, :, iZ)), 'Color', [0 1 0]);
-        imgOut = showoverlay(imgOut, bwperim(spotMask(:, :, iZ)), 'Color', [1 0 1]);
+        %imgOut = showoverlay(imgOut, bwperim(spotMask(:, :, iZ)), 'Color', [1 0 1]);
 
         if iZ == 1
             imwrite(imgOut, fullfile(outputDir, [outputFN, '.tiff']), 'Compression', 'none')
@@ -194,6 +203,7 @@ for iFile = 1:numel(fileList)
 
     end
 
+    return
 
     celldata = regionprops(cellMask, image, 'PixelIdxList', 'PixelList', 'PixelValues');
     spotData = regionprops(spotMask, image, 'Centroid', 'MeanIntensity', 'PixelValues', 'PixelIdxList');
