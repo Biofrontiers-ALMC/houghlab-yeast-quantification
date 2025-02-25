@@ -22,15 +22,13 @@ yeast cells. This project is a collaboration with the [Hough Lab](https://www.co
 ## Contributing
 
 ### Top contributors
-<a href="https://github.com/othneildrew/Best-README-Template/graphs/contributors">
+<a href="https://github.com/Biofrontiers-ALMC/houghlab-yeast-quantification/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Biofrontiers-ALMC/houghlab-yeast-quantification" alt="contrib.rocks image" />
 </a>
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
-
 
 ## Contact
 
