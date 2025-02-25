@@ -105,6 +105,29 @@ for iFile = 1:numel(fileList)
     cellMask = imbinarize(medfilt3(image, [ip.Results.Smoothing, ip.Results.Smoothing, ip.Results.Smoothing]),...
         'adaptive', 'Sensitivity', 0.1);
 
+    %Clean up the cell mask
+    cellMask = imopen(cellMask, strel('sphere', 4));
+
+    cellMask = imfill(cellMask, 26, 'holes');
+
+    %Watershed to separate clusters of objects
+    dd = -bwdist(~cellMask);
+    dd(~cellMask) = Inf;
+
+    dd = imhmin(dd, 5, 26);
+
+    LL = watershed(dd);
+    LL(~cellMask) = 0;
+
+    cellMask(LL == 0) = false;
+
+
+    cellMask = bwareaopen(cellMask, 5000, 26);
+
+    % volshow(cellMask)
+
+
+
     
 
 
@@ -149,23 +172,6 @@ for iFile = 1:numel(fileList)
     % 
     %     %%imshow(mask)
     % end
-
-    %Clean up the cell mask
-    cellMask = imopen(cellMask, strel('sphere', 4));
-
-    %Watershed to separate clusters of objects
-    dd = -bwdist(~cellMask);
-    dd(~cellMask) = Inf;
-
-    dd = imhmin(dd, 0.8);
-
-    LL = watershed(dd);
-    LL(~cellMask) = 0;
-
-    cellMask(LL == 0) = false;
-
-    cellMask = bwareaopen(cellMask, 5000, 26);
-    volshow(cellMask)
 
     % %% Spot finding
     % sigma1 = 6;

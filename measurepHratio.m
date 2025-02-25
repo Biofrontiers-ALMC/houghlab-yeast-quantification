@@ -4,7 +4,7 @@ clearvars
 clc
 
 inputDir = 'Z:\Microscopy\Yeast\Sup35\20250205_JA_SEP-mRuby';
-
+outputDir = 'Z:\Microscopy\Yeast\Sup35\20250224 pH JWT';
 files = dir(fullfile(inputDir, '*.nd2'));
 
 storeTime = zeros(1, numel(files));
@@ -37,7 +37,11 @@ for iF = 1:numel(files)
 
     cellMask = bwareaopen(cellMask, 400);
 
-    showoverlay(Itritc, bwperim(cellMask))
+    Iout = showoverlay(Itritc, bwperim(cellMask));
+
+
+    [~, fn] = fileparts(reader.filename);
+    imwrite(Iout, fullfile(outputDir, [fn, '_mask.tif']), 'Compression', 'none');
 
     cellData_red = regionprops(cellMask, Itritc, 'MeanIntensity');
     cellData_green = regionprops(cellMask, Iegfp, 'MeanIntensity');
@@ -66,6 +70,9 @@ storeTime = storeTime - minTime;
 
 storeRatio_sorted = storeRatio(idx);
 
-plot(tt, storeRatio_sorted)
+plot(tt/60, storeRatio_sorted)
+
+ylabel('Mean ratio')
+xlabel('Minutes')
 
 
