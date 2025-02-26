@@ -29,7 +29,7 @@ if ischar(input) || isStringScalar(input)
 end
 
 ip = inputParser;
-ip.addParameter('CellSensitivity', 0.2);
+ip.addParameter('CellSensitivity', 0.6);
 ip.addParameter('Smoothing', 3);
 parse(ip, varargin{:});
 
@@ -75,7 +75,7 @@ if ~exist(outputDir, 'dir')
     mkdir(outputDir)
 end
 
-for iFile = 1:numel(fileList)
+for iFile = 1%:numel(fileList)
 
     %Print statement showing which file we're working on
     fprintf('[%s] Processing %s (file %d of %d)...\n', ...
@@ -88,7 +88,7 @@ for iFile = 1:numel(fileList)
     [~, outputFN] = fileparts(reader.filename);
 
     %Initialize variables to store 3D masks and images
-    cellMask = zeros(reader.height, reader.width, reader.sizeZ, 'logical');
+    %cellMask = zeros(reader.height, reader.width, reader.sizeZ, 'logical');
     spotMask = zeros(reader.height, reader.width, reader.sizeZ, 'logical');
     image = zeros(reader.height, reader.width, reader.sizeZ, 'uint16');
     
@@ -103,10 +103,11 @@ for iFile = 1:numel(fileList)
     %Create a mask of the cells using a smoothed image to remove unwanted
     %hot spots
     cellMask = imbinarize(medfilt3(image, [ip.Results.Smoothing, ip.Results.Smoothing, ip.Results.Smoothing]),...
-        'adaptive', 'Sensitivity', 0.1);
-
+         'adaptive', 'Sensitivity', ip.Results.CellSensitivity);
+   
     %Clean up the cell mask
     cellMask = imopen(cellMask, strel('sphere', 4));
+    cellMask = imclose(cellMask, strel('sphere', 5));
 
     cellMask = imfill(cellMask, 26, 'holes');
 
@@ -114,19 +115,41 @@ for iFile = 1:numel(fileList)
     dd = -bwdist(~cellMask);
     dd(~cellMask) = Inf;
 
-    dd = imhmin(dd, 5, 26);
+    dd = imhmin(dd, 7, 26);
 
-    LL = watershed(dd);
+    LL = watershed(dd, 26);
     LL(~cellMask) = 0;
 
     cellMask(LL == 0) = false;
 
-
     cellMask = bwareaopen(cellMask, 5000, 26);
-
     % volshow(cellMask)
 
+    %--Measure cell data--
+    cellData = regionprops3(cellMask, image, 'Volume', 'VoxelValues', 'VoxelIdxList');
+    
+    for iCell = 1:height(cellData)
 
+        %currCellMask = cellData(iCell, :).Image{:};
+
+        currVoxelValues = cellData(iCell, :).VoxelValues;
+        meanVoxelValue = mean(currVoxelValues{:});
+        stdVoxelValue = std(double(currVoxelValues{:}), 0, 'all');
+
+        spotTh = meanVoxelValue + 1.5 * stdVoxelValue;
+        vacuoleTh = meanVoxelValue - stdVoxelValue;
+
+        %currSpotMask = cellData(iCell, :).VoxelValues > spotTh;
+        %currCellMask((cellData(iCell, :).VoxelValues{:}) < vacuoleTh) = false;
+        % 
+        % volshow(currCellMask);
+        % pause
+        
+        isVacuole = cellData(iCell, :).VoxelValues{:} < vacuoleTh
+
+        cellMask(cellData(iCell, :).VoxelIdxList{ ...
+            cellData(iCell, :).VoxelValues{:} < vacuoleTh}) = false;
+    end
 
     
 
@@ -209,61 +232,61 @@ for iFile = 1:numel(fileList)
 
     end
 
-    return
-
-    celldata = regionprops(cellMask, image, 'PixelIdxList', 'PixelList', 'PixelValues');
-    spotData = regionprops(spotMask, image, 'Centroid', 'MeanIntensity', 'PixelValues', 'PixelIdxList');
-
-    spotCentroids = cat(1, spotData.Centroid);
-
-    %%
-    for iCell = 1:numel(celldata)
-
-        celldata(iCell).NumSpots = 0;
-        celldata(iCell).TotalSpotInt = 0;
-        celldata(iCell).SpotPixelIdxList = {};
-        celldata(iCell).DiffusePixelIdxList = celldata(iCell).PixelIdxList;
-
-        for iSpot = 1:numel(spotData)
-            %Check if spot is in cell
-            if ismember(round(spotCentroids(iSpot, :)), celldata(iCell).PixelList, 'rows')
-
-                %Store spot information as well
-
-                celldata(iCell).NumSpots = celldata(iCell).NumSpots + 1;
-                celldata(iCell).TotalSpotInt = celldata(iCell).TotalSpotInt + ...
-                    sum(spotData(iSpot).PixelValues);
-
-                if isempty(celldata(iCell).SpotPixelIdxList)
-                    celldata(iCell).SpotPixelIdxList = {spotData(iSpot).PixelIdxList};
-                else
-                    celldata(iCell).SpotPixelIdxList{end + 1} = spotData(iSpot).PixelIdxList;
-                end
-
-                %Remove the spot indices from the indices used to calculate the
-                %diffuse signal - this is probably not very efficient right now
-                for ii = 1:numel(spotData(iSpot).PixelIdxList)
-                    idxMatch = celldata(iCell).DiffusePixelIdxList == spotData(iSpot).PixelIdxList(ii);
-                    celldata(iCell).DiffusePixelIdxList(idxMatch) = [];
-                end
-
-            end
-        end
-
-        %Calculate total intensity in cell vs total intensity in spot - need to
-        %exclude regions in spots
-        celldata(iCell).TotalIntDiffuse = sum(image(celldata(iCell).DiffusePixelIdxList));
-        celldata(iCell).TotalIntSpot = 0;
-        for iSpots = 1:numel(celldata(iCell).SpotPixelIdxList)
-            celldata(iCell).TotalIntSpot = ...
-                celldata(iCell).TotalIntSpot + sum(image(celldata(iCell).SpotPixelIdxList{iSpots}));
-        end
-    end
-
-    %% Save data
-
-
-    save(fullfile(outputDir, [outputFN, '.mat']), 'celldata', 'cellMask', 'spotMask')
+    % 
+    % 
+    % celldata = regionprops(cellMask, image, 'PixelIdxList', 'PixelList', 'PixelValues');
+    % spotData = regionprops(spotMask, image, 'Centroid', 'MeanIntensity', 'PixelValues', 'PixelIdxList');
+    % 
+    % spotCentroids = cat(1, spotData.Centroid);
+    % 
+    % %%
+    % for iCell = 1:numel(celldata)
+    % 
+    %     celldata(iCell).NumSpots = 0;
+    %     celldata(iCell).TotalSpotInt = 0;
+    %     celldata(iCell).SpotPixelIdxList = {};
+    %     celldata(iCell).DiffusePixelIdxList = celldata(iCell).PixelIdxList;
+    % 
+    %     for iSpot = 1:numel(spotData)
+    %         %Check if spot is in cell
+    %         if ismember(round(spotCentroids(iSpot, :)), celldata(iCell).PixelList, 'rows')
+    % 
+    %             %Store spot information as well
+    % 
+    %             celldata(iCell).NumSpots = celldata(iCell).NumSpots + 1;
+    %             celldata(iCell).TotalSpotInt = celldata(iCell).TotalSpotInt + ...
+    %                 sum(spotData(iSpot).PixelValues);
+    % 
+    %             if isempty(celldata(iCell).SpotPixelIdxList)
+    %                 celldata(iCell).SpotPixelIdxList = {spotData(iSpot).PixelIdxList};
+    %             else
+    %                 celldata(iCell).SpotPixelIdxList{end + 1} = spotData(iSpot).PixelIdxList;
+    %             end
+    % 
+    %             %Remove the spot indices from the indices used to calculate the
+    %             %diffuse signal - this is probably not very efficient right now
+    %             for ii = 1:numel(spotData(iSpot).PixelIdxList)
+    %                 idxMatch = celldata(iCell).DiffusePixelIdxList == spotData(iSpot).PixelIdxList(ii);
+    %                 celldata(iCell).DiffusePixelIdxList(idxMatch) = [];
+    %             end
+    % 
+    %         end
+    %     end
+    % 
+    %     %Calculate total intensity in cell vs total intensity in spot - need to
+    %     %exclude regions in spots
+    %     celldata(iCell).TotalIntDiffuse = sum(image(celldata(iCell).DiffusePixelIdxList));
+    %     celldata(iCell).TotalIntSpot = 0;
+    %     for iSpots = 1:numel(celldata(iCell).SpotPixelIdxList)
+    %         celldata(iCell).TotalIntSpot = ...
+    %             celldata(iCell).TotalIntSpot + sum(image(celldata(iCell).SpotPixelIdxList{iSpots}));
+    %     end
+    % end
+    % 
+    % %% Save data
+    % 
+    % 
+    % save(fullfile(outputDir, [outputFN, '.mat']), 'celldata', 'cellMask', 'spotMask')
 
     fprintf('\b DONE\n')
 end
