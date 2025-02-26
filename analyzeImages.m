@@ -33,10 +33,6 @@ ip.addParameter('CellSensitivity', 0.6);
 ip.addParameter('Smoothing', 3);
 parse(ip, varargin{:});
 
-%inputDir = 'Z:\Microscopy\Yeast\Sup35\20250211_JA_Sup35MstartWT_4hrinduction';
-%outputDir = 'Z:\Microscopy\Yeast\Sup35\20250214 Analysis JWT\MATLAB';
-%outputDir = 'D:\Work\ALMC\houghlab-yeast-quantification\data\processed\20250225';
-
 fileList = {};
 
 fileCtr = 0;
@@ -94,64 +90,89 @@ for iFile = 1%:numel(fileList)
     
     %Read in the image
     for iZ = 1:reader.sizeZ
-     
-        I = getPlane(reader, iZ, 1, 1);
-     
-        image(:, :, iZ) = I;
+
+        image(:, :, iZ) = getPlane(reader, iZ, 1, 1);
+
     end
 
-    %Create a mask of the cells using a smoothed image to remove unwanted
-    %hot spots
-    cellMask = imbinarize(medfilt3(image, [ip.Results.Smoothing, ip.Results.Smoothing, ip.Results.Smoothing]),...
-         'adaptive', 'Sensitivity', ip.Results.CellSensitivity);
-   
-    %Clean up the cell mask
-    cellMask = imopen(cellMask, strel('sphere', 4));
-    cellMask = imclose(cellMask, strel('sphere', 5));
+    imageDataSmoothed = medfilt3(imageData, [3 3 3]);
 
-    cellMask = imfill(cellMask, 26, 'holes');
+    bgLvl = mode(imageDataSmoothed, 'all');
+    %%
+    thLvl = bgLvl + 0.07 * bgLvl;
 
-    %Watershed to separate clusters of objects
-    dd = -bwdist(~cellMask);
-    dd(~cellMask) = Inf;
+    mask = imageDataSmoothed > thLvl;
 
-    dd = imhmin(dd, 7, 26);
+    mask = imopen(mask, strel('sphere', 4));
+    mask = imfill(mask, 4, 'holes');
 
-    LL = watershed(dd, 26);
-    LL(~cellMask) = 0;
+    dd = -bwdist(~mask);
+    dd(~mask) = Inf;
 
-    cellMask(LL == 0) = false;
+    dd = imhmin(dd, 1);
 
-    cellMask = bwareaopen(cellMask, 5000, 26);
-    % volshow(cellMask)
+    LL = watershed(dd);
 
-    %--Measure cell data--
-    cellData = regionprops3(cellMask, image, 'Volume', 'VoxelValues', 'VoxelIdxList');
-    
-    for iCell = 1:height(cellData)
-
-        %currCellMask = cellData(iCell, :).Image{:};
-
-        currVoxelValues = cellData(iCell, :).VoxelValues;
-        meanVoxelValue = mean(currVoxelValues{:});
-        stdVoxelValue = std(double(currVoxelValues{:}), 0, 'all');
-
-        spotTh = meanVoxelValue + 1.5 * stdVoxelValue;
-        vacuoleTh = meanVoxelValue - stdVoxelValue;
-
-        %currSpotMask = cellData(iCell, :).VoxelValues > spotTh;
-        %currCellMask((cellData(iCell, :).VoxelValues{:}) < vacuoleTh) = false;
-        % 
-        % volshow(currCellMask);
-        % pause
-        
-        isVacuole = cellData(iCell, :).VoxelValues{:} < vacuoleTh
-
-        cellMask(cellData(iCell, :).VoxelIdxList{ ...
-            cellData(iCell, :).VoxelValues{:} < vacuoleTh}) = false;
-    end
-
-    
+    mask(LL == 0) = 0;
+    % 
+    % %Create a mask of the cells using a smoothed image to remove unwanted
+    % %hot spots
+    % cellMask = imbinarize(medfilt3(image, [ip.Results.Smoothing, ip.Results.Smoothing, ip.Results.Smoothing]),...
+    %      'adaptive', 'Sensitivity', ip.Results.CellSensitivity);
+    % 
+    % %Clean up the cell mask
+    % cellMask = imopen(cellMask, strel('sphere', 4));
+    % cellMask = imclose(cellMask, strel('sphere', 5));
+    % 
+    % cellMask = imfill(cellMask, 26, 'holes');
+    % 
+    % %Watershed to separate clusters of objects
+    % dd = -bwdist(~cellMask);
+    % dd(~cellMask) = Inf;
+    % 
+    % dd = imhmin(dd, 7, 26);
+    % 
+    % LL = watershed(dd, 26);
+    % LL(~cellMask) = 0;
+    % 
+    % cellMask(LL == 0) = false;
+    % 
+    % cellMask = bwareaopen(cellMask, 5000, 26);
+    % % volshow(cellMask)
+    % 
+    % %--Measure cell data--
+    % cellData = regionprops3(cellMask, image, 'Volume', 'VoxelValues', 'VoxelIdxList');
+    % 
+    % for iCell = 1:height(cellData)
+    % 
+    %     %currCellMask = cellData(iCell, :).Image{:};
+    % 
+    %     currVoxelValues = cellData(iCell, :).VoxelValues;
+    %     meanVoxelValue = mean(currVoxelValues{:});
+    %     stdVoxelValue = std(double(currVoxelValues{:}), 0, 'all');
+    % 
+    %     spotTh = meanVoxelValue + 1.5 * stdVoxelValue;
+    %     vacuoleTh = meanVoxelValue - stdVoxelValue;
+    % 
+    %     %currSpotMask = cellData(iCell, :).VoxelValues > spotTh;
+    %     %currCellMask((cellData(iCell, :).VoxelValues{:}) < vacuoleTh) = false;
+    %     % 
+    %     % volshow(currCellMask);
+    %     % pause
+    % 
+    %     try
+    %         isVacuole = (cellData(iCell, :).VoxelValues{:}) < vacuoleTh;
+    %         currVoxelIdxList = cellData(iCell, :).VoxelIdxList{:};
+    % 
+    %         if any(isVacuole)
+    %             cellMask(currVoxelIdxList(isVacuole)) = false;
+    %         end
+    %     catch
+    %         keyboard
+    %     end
+    % end
+    % 
+    % 
 
 
     
