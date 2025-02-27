@@ -40,8 +40,9 @@ LL = watershed(dd);
 mask(LL == 0) = 0;
 
 mask = imerode(mask, strel('sphere', 3));
+mask = imclearborder(mask, 4);
 
-showoverlay(imadjust(imageData(:, :, 16)), bwperim(mask(:, :, 16)));
+%showoverlay(imadjust(imageData(:, :, 16)), bwperim(mask(:, :, 16)));
 
 %% Find vacuoles
 %meanCellInt = mean(imageData(mask), 'all');
@@ -79,12 +80,37 @@ for iCell = 1:height(cellData)
     idxList = idxList(isSpot);
     spotMask(idxList) = true;    
 
-
 end
 %showoverlay(imadjust(imageData(:, :, 16)), vacMask(:, :, 16));
 %%
-plane = 18;
-showoverlay(imageData(:, :, plane), bwperim(spotMask(:, :, plane)))
+% plane = 18;
+% showoverlay(imageData(:, :, plane), bwperim(spotMask(:, :, plane)))
+% 
+% %% Retry with spot detection
+% 
+% %Size of spot filter
+% sigma1 = 1/(1 + sqrt(2)) * 5;
+% sigma2 = 1/(1 + sqrt(2)) * 12;
+% 
+% dogSpotMask = false(size(mask));
+% 
+% for iZ = 1:size(imageData, 3)
+% 
+%     %Find spots
+%     df1 = imgaussfilt(imageDataSmoothed(:, :, iZ), sigma1);
+%     df2 = imgaussfilt(imageDataSmoothed(:, :, iZ), sigma2);
+% 
+%     DoG = df1 - df2;
+% 
+%     dogSpotMask(:, :, iZ) = DoG > 200;
+% 
+% end
+% 
+% %%
+% plane = 30;
+% showoverlay(imageData(:, :, plane), bwperim(dogSpotMask(:, :, plane)))
+
+
 
 %%
 cellMask = bwlabeln(mask);
@@ -94,12 +120,12 @@ outputDir = '../processed/20250227';
 outputFN = 'tmp';
 
 %Renormalize the image data for output image
-imageData = double(imageData);
-imageData = (imageData - min(imageData, [], 'all')) / (max(imageData, [], 'all') - min(imageData, [], 'all'));
+imageDataNorm = double(imageData);
+imageDataNorm = (imageData - min(imageDataNorm, [], 'all')) / (max(imageDataNorm, [], 'all') - min(imageDataNorm, [], 'all'));
 
 for iZ = 1:size(imageData, 3)
 
-    imgOut = showoverlay(imageData(:, :, iZ), bwperim(cellMask(:, :, iZ)), 'Color', [0 1 0]);
+    imgOut = showoverlay(imageDataNorm(:, :, iZ), bwperim(cellMask(:, :, iZ)), 'Color', [0 1 0]);
     imgOut = showoverlay(imgOut, bwperim(spotMask(:, :, iZ)), 'Color', [1 0 1]);
 
     if iZ == 1
