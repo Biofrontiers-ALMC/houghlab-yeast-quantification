@@ -1,8 +1,9 @@
 clearvars
+close all
 clc
 
-folder = 'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20241120_JA_Sup35Mstart_2hrs_induction';
-
+folder = 'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250211_JA_Sup35MstartWT_4hrinduction';
+outputDir = 'Z:\Microscopy\Yeast\Sup35\20250306 Plots';
 files = dir(fullfile(folder, '*.mat'));
 
 storeNetCellMeanIntensity = [];
@@ -33,3 +34,9 @@ hold off
 xlabel('Cell Mean Intensity')
 ylabel('Diffuse/Spot Mean Intensity')
 legend('Diffuse', 'Spot')
+
+[~, dataSetName] = fileparts(folder);
+title(dataSetName, 'Interpreter', 'none');
+
+saveas(gcf, fullfile(outputDir, [dataSetName, '.fig']));
+saveas(gcf, fullfile(outputDir, [dataSetName, '.jpg']));
