@@ -43,3 +43,6 @@ scatter(totalProtein, totalSpotConc)
 % ylabel('Total intensity')
 % xlabel('Cell')
 legend('Diffuse', 'Punctate')
+
+xlabel('Cell Mean Intensity')
+ylabel('Diffuse/Spot Mean Intensity')

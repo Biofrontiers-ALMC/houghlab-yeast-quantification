@@ -1,0 +1,26 @@
+clearvars
+clc
+
+% analyzeImages('Z:\Microscopy\Yeast\Sup35\20241120_JA_Sup35Mstart_2hrs_induction', ...
+%    'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20241120_JA_Sup35Mstart_2hrs_induction');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250124_JA_Sup35Mstart_WT', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250124_JA_Sup35Mstart_WT');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250127_JA_Sup35Mstart_MposDel', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250127_JA_Sup35Mstart_MposDel');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250131_JA_Sup35Mstart_FranzmannMut', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250131_JA_Sup35Mstart_FranzmannMut');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250206_JA_Sup35MstartWT_2hrinduction', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250206_JA_Sup35MstartWT_2hrinduction');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250206_JA_Sup35MstartWT_Edmedia', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250206_JA_Sup35MstartWT_Edmedia');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250206_JA_Sup35MstartWT_ONinduction', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250206_JA_Sup35MstartWT_ONinduction');
+
+analyzeImages('Z:\Microscopy\Yeast\Sup35\20250211_JA_Sup35MstartWT_4hrinduction', ...
+   'Z:\Microscopy\Yeast\Sup35\20250305 Analysis\20250211_JA_Sup35MstartWT_4hrinduction');

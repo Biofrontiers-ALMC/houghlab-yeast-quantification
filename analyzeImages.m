@@ -170,6 +170,12 @@ for iFile = 1:numel(fileList)
         finalCellData(iCell).SpotVolume = numel(finalCellData(iCell).SpotIdxList);
         finalCellData(iCell).SpotMeanIntensity = mean(imageData(finalCellData(iCell).SpotIdxList), 'all');
 
+        %Measure intensity within diffuse region and spots
+        isDiffuseAndSpot = isDiffuse | isOnlySpot;
+        finalCellData(iCell).NetCellIdxList = finalCellData(iCell).RawCellIdxList(isDiffuseAndSpot);
+        finalCellData(iCell).NetCellVolume = numel(finalCellData(iCell).NetCellIdxList);
+        finalCellData(iCell).NetCellMeanIntensity = mean(imageData(finalCellData(iCell).NetCellIdxList), 'all');
+
     end
 
     %---Generate outputs---%
