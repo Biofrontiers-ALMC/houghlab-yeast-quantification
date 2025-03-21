@@ -150,6 +150,12 @@ for iFile = 1:numel(fileList)
         % spotMask(spotIdxList) = true;
 
         %---Put together the final cell data---
+
+        %Include metadata about each cell
+        finalCellData(iCell).Filename = reader.filename;
+        finalCellData(iCell).CreationDate = System.IO.File.GetCreationTime(reader.filename);
+        finalCellData(iCell).PosixTime = convertTo(finalCellData(iCell).CreationDate, 'posixTime');
+
         %Measure data from full cell
         %Note: This is larger than the final cell because some of the
         %surrounding region is classified as "vacuole"
