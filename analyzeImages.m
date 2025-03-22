@@ -153,7 +153,8 @@ for iFile = 1:numel(fileList)
 
         %Include metadata about each cell
         finalCellData(iCell).Filename = reader.filename;
-        finalCellData(iCell).CreationDate = System.IO.File.GetCreationTime(reader.filename);
+        d = System.IO.File.GetLastWriteTime(reader.filename);
+        finalCellData(iCell).CreationDate = datetime(d.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second);
         finalCellData(iCell).PosixTime = convertTo(finalCellData(iCell).CreationDate, 'posixTime');
 
         %Measure data from full cell
